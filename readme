@@ -1,0 +1,15 @@
+Installation
+=========================================================================
+Do NOT install in a production environment.  This module is designed to only
+run on dev environments.  Once an entity module is created it's up to you to
+harden it against threats.  This module does not need to be installed for
+created modules to run.
+
+
+
+TODO
+=========================================================================
+Add revisions
+Add option to auto create type table
+Add option to auto create id field and changed/updated fields
+Add option to auto create workflow

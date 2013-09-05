@@ -1,0 +1,19 @@
+.db-option legend {
+  font-size: 14px;
+  margin-bottom: 5px;
+}
+
+.entity-info .btn-danger {
+    float: right;
+    margin-top: -60px;
+}
+
+.db-option {
+    clear: both;
+}
+
+.entity-info .control-group {
+    clear: both;
+
+}
+

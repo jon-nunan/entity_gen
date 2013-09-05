@@ -1,0 +1,5 @@
+name = Entity Gen
+description = Generates module code for new entity api based modules
+core = 7.x
+package = dev
+files[] = entity_gen.module

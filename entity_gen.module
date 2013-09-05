@@ -1,0 +1,708 @@
+<?php
+/**
+ * @file
+ * TODO: Enter file description here.
+ */
+$module_path = drupal_get_path('module', 'entity_gen');
+include_once $module_path . '/entity_gen.theme.inc';
+
+function entity_gen_menu() {
+
+  $items['admin/generators/entity'] = array(
+    'page callback' => 'entity_gen_overview',
+    //TODO: add permission
+    'access callback' => TRUE,
+    'title' => 'Entity based module generator',
+  );
+
+
+  return $items;
+}
+
+
+function entity_gen_overview() {
+  $module_path = drupal_get_path('module', 'entity_gen');
+  drupal_add_css($module_path . '/generator.css');
+  $render_array['overview'] = array(
+    '#markup' => '<p>Generates starting code for module that implements entities</p>',
+  );
+  $render_array['entity_form'] = array(
+    'form' => drupal_get_form('entity_gen_entity_form'),
+  );
+  return $render_array;
+}
+
+/**
+ *  Form for defining entity
+ */
+function entity_gen_entity_form($form, &$form_state) {
+
+  $form['#tree'] = TRUE;
+
+  $config_raw = variable_get('entity_gen_last_made', '');
+  $config = json_decode($config_raw);
+  dpm('last made:');
+  dpm($config);
+  $form['info'] = array(
+    '#type' => 'item',
+    '#title' => t('Enter your Module details'),
+  );
+
+  // module name
+  $form['name'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Module name'),
+    '#required' => TRUE,
+    '#default_value' => !empty($config->name) ? $config->name : '',
+  );
+
+  // machine name
+  $form['machine_name'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Machine name',
+    '#required' => TRUE,
+    '#default_value' => !empty($config->machine_name) ? $config->machine_name
+      : '',
+  );
+
+  // module description
+
+  $form['description'] = array(
+    '#type' => 'textarea',
+    '#title' => 'Module description',
+    '#required' => TRUE,
+    '#default_value' => !empty($config->description) ? $config->description
+      : '',
+  );
+
+  //core
+  $form['core'] = array(
+    '#type' => 'textfield',
+    '#title' => 'core',
+    '#required' => TRUE,
+    '#default_value' => !empty($config->core) ? $config->core : '7.x',
+  );
+
+  //package
+  $form['package'] = array(
+    '#type' => 'textfield',
+    '#title' => 'package',
+    '#required' => TRUE,
+    '#default_value' => !empty($config->package) ? $config->package : 'Entity',
+  );
+
+  // files info will be auto generated
+
+
+  // entity info as a fieldset that can be duplicated
+
+  if (empty($form_state['num_entities'])) {
+    if (isset($config->entity) && count($config->entity) > 1) {
+      $form_state['num_entities'] = count($config->entity);
+    }
+    else {
+      $form_state['num_entities'] = 1;
+    }
+  }
+
+  if (empty($form_state['entity_fields'])) {
+    $form_state['entity_fields'] = array();
+  }
+
+  $form['entity'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Entities'),
+    '#attributes' => array('id' => array('entity-wrapper')),
+    '#collapsible' => FALSE,
+  );
+
+
+  // Build the number of entity fieldsets indicated by $form_state['num_entities']
+  for ($i = 0; $i < $form_state['num_entities']; $i++) {
+    $form['entity'][$i] = array(
+      '#type' => 'fieldset',
+      '#title' => t('@num. @entity', array(
+        '@num' => $i + 1,
+        '@entity' => (isset($config->entity[$i]->general->name)) ?
+          $config->entity[$i]->general->name : 'Entity'
+      )),
+      '#attributes' => array(
+        'class' => array('entity-info', 'span12'),
+        'id' => array('entity-fieldset-' . $i)
+      ),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+    );
+    $form['entity'][$i]['general'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Entity Info'),
+      '#attributes' => array(
+        'class' => array('entity-general-info', 'span5'),
+        'id' => array('entity-info-' . $i)
+      ),
+      '#collapsible' => TRUE,
+      '#collapsed' => FALSE,
+    );
+    $form['entity'][$i]['general']['name'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Entity name'),
+      '#default_value' => !empty($config->entity[$i]->general->name) ?
+        $config->entity[$i]->general->name : '',
+    );
+    $form['entity'][$i]['general']['machine_name'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Entity machine name'),
+      '#default_value' => !empty($config->entity[$i]->general->machine_name) ?
+        $config->entity[$i]->general->machine_name : '',
+    );
+    $form['entity'][$i]['general']['description'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Entity description'),
+      '#default_value' => !empty($config->entity[$i]->general->description) ?
+        $config->entity[$i]->general->description : '',
+    );
+
+
+    $form['entity'][$i]['general']['auto_id'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Auto create ID field'),
+      '#disabled' => FALSE,
+      '#default_value' => isset($config->entity[$i]->general->auto_id) ?
+        $config->entity[$i]->general->auto_id : TRUE,
+    );
+
+    $form['entity'][$i]['general']['workflow'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Workflow related fields'),
+      '#description' => t('Add fields related to workflow (created, updated, user ID, status fields)'),
+      '#default_value' => isset($config->entity[$i]->general->workflow) ? $config->entity[$i]->general->workflow :
+        TRUE,
+    );
+
+    $form['entity'][$i]['general']['revisions'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Use revisions'),
+      '#default_value' => isset($config->entity[$i]->general->revisions) ?
+        $config->entity[$i]->general->revisions : TRUE,
+    );
+
+    // Add entities we want to have relations with
+    $fk_options = array(
+      'user' => 'User',
+      'node' => 'Node',
+      'term' => 'Term',
+    );
+    // Include entities we're making now as options
+
+    for ($j = 0; $j <= $form_state['num_entities']; $j++) {
+      // check machine name is set first
+      if (isset($config->entity[$j]->general->machine_name) && $config->entity[$j]->general->machine_name != NULL &&
+        $j != $i
+      ) {
+        $fk_options[$config->entity[$j]->general->machine_name] = $config->entity[$j]->general->name;
+      }
+    }
+
+    $form['entity'][$i]['general']['foreign_keys'] = array(
+      '#type' => 'select',
+      '#title' => t('Foreign key relationships'),
+      '#options' => $fk_options,
+      '#multiple' => TRUE,
+      '#default_value' => !empty($config->entity[$i]->foreign_keys) ?
+        $config->entity[$i]->foreign_keys : '',
+    );
+    // End general entity fieldset
+
+    $form['entity'][$i]['fields'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Fields'),
+      '#attributes' => array('class' => array('field-info', 'span5')),
+      '#collapsible' => TRUE,
+      '#collapsed' => FALSE,
+    );
+
+    // fields info as a fieldset that can be duplicated
+    if (empty($form_state['entity_fields'][$i])) {
+      if (isset($config->entity[$i]->fields) && count(get_object_vars($config->entity[$i]->fields)) > 2) {
+        //we check for >2 as the 'add field button' shows up in the object
+        $form_state['entity_fields'][$i] = count(get_object_vars($config->entity[$i]->fields)) - 1;
+      } else {
+        $form_state['entity_fields'][$i] = 0;
+      }
+
+    }
+
+
+    for ($j = 0; $j <= $form_state['entity_fields'][$i]; $j++) {
+      $form['entity'][$i]['fields'][$j] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Field #@num', array('@num' => $j)),
+        '#attributes' => array('id' => array('entity-' . $i . '-field-' . $j)),
+        '#collapsible' => FALSE,
+
+      );
+      // clear field so fields from previous loop aren't added to this field
+      $field = array();
+
+      // variable name is getting too long to follow, so giving it an alias
+      if (isset($form_state['values']['entity'][$i]['fields'][$j])) {
+        $value_default = $form_state['values']['entity'][$i]['fields'][$j];
+      }
+      else {
+        $value_default = !empty($config->entity[$i]->fields->$j) ?
+          get_object_vars($config->entity[$i]->fields->$j) : '';
+      }
+
+
+      $field['name'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Field Name'),
+        '#prefix' => '<div class="span2">',
+        '#suffix' => '</div>',
+        '#size' => 20,
+        '#default_value' => !empty($value_default['name']) ?
+          $value_default['name'] : '',
+      );
+      $entity_name = isset($config->entity[$i]->general->name) ? $config->entity[$i]->general->name : 'New Entity';
+      $field['remove'] = array(
+        '#type' => 'submit',
+        '#value' => t('Remove ' . $entity_name . ' field #' . $j),
+        '#submit' => array('field_remove'),
+      );
+
+      $field['machine_name'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Machine name'),
+        '#prefix' => '<div class="span2">',
+        '#suffix' => '</div>',
+        '#size' => 20,
+        '#default_value' => !empty($value_default['machine_name']) ?
+          $value_default['machine_name'] : '',
+      );
+
+      $field_type_options = _entity_get_field_types();
+
+      $type_selected = !empty($value_default['type']) ? $value_default['type'] : 'text';
+
+      $field['type'] = array(
+        '#type' => 'select',
+        '#title' => t('Type of field'),
+        '#prefix' => '<div class="span2">',
+        '#suffix' => '</div>',
+        '#options' => $field_type_options,
+        '#default_value' => $type_selected,
+        '#ajax' => array(
+          // When 'event' occurs, Drupal will perform an ajax request in the
+          // background. Usually the default value is sufficient (eg. change for
+          // select elements), but valid values include any jQuery event,
+          // most notably 'mousedown', 'blur', and 'submit'.
+          // 'event' => 'change',
+          'callback' => 'entity_gen_ajax_fields_type',
+          'wrapper' => 'entity-' . $i . '-field-' . $j,
+        ),
+      );
+
+
+      switch ($type_selected) {
+        case 'varchar':
+        case 'char':
+        case 'text':
+          $field['length'] = array(
+            '#type' => 'textfield',
+            '#title' => 'Length!',
+            '#prefix' => '<div class="span2">',
+            '#suffix' => '</div>',
+            '#size' => 5,
+            '#default_value' => !empty($value_default['length']) ?
+              $value_default['length'] : 255,
+          );
+
+          $size_selected = !empty($value_default['size']) ?
+            $value_default['size'] : 'normal';
+
+          $field['size'] = array(
+            '#type' => 'select',
+            '#title' => t('Size of field'),
+            '#prefix' => '<div class="span2">',
+            '#suffix' => '</div>',
+            '#options' => array(
+              'tiny' => 'Tiny',
+              'small' => 'Small',
+              'normal' => 'Normal',
+              'big' => 'Big'
+            ),
+            '#default_value' => $size_selected,
+          );
+          break;
+        case 'numeric':
+          $field['scale'] = array(
+            '#type' => 'textfield',
+            '#title' => 'Scale',
+            '#prefix' => '<div class="span2">',
+            '#suffix' => '</div>',
+            '#size' => 5,
+            '#default_value' => !empty($value_default['scale']) ?
+              $value_default['scale'] : 2,
+          );
+          $field['precision'] = array(
+            '#type' => 'textfield',
+            '#title' => 'Precision',
+            '#prefix' => '<div class="span2">',
+            '#suffix' => '</div>',
+            '#size' => 5,
+            '#default_value' => !empty($value_default['precision']) ?
+              $value_default['precision'] : 10,
+          );
+
+        case 'int':
+        case 'float':
+        case 'serial':
+          $field['unsigned'] = array(
+            '#type' => 'checkbox',
+            '#title' => 'Unsigned',
+            '#prefix' => '<div class="span2">',
+            '#suffix' => '</div>',
+            '#default_value' => !empty($value_default['unsigned']) ?
+              $value_default['unsigned'] : 0,
+          );
+        default:
+          $size_selected = !empty($value_default['size']) ?
+            $value_default['size'] : 'normal';
+
+          $field['size'] = array(
+            '#type' => 'select',
+            '#title' => t('Size of field'),
+            '#prefix' => '<div class="span2">',
+            '#suffix' => '</div>',
+            '#options' => array(
+              'tiny' => 'Tiny',
+              'small' => 'Small',
+              'normal' => 'Normal',
+              'big' => 'Big'
+            ),
+            '#default_value' => $size_selected,
+          );
+
+      }
+      $field['db options'] = array(
+        '#type' => 'fieldset',
+        '#title' => 'DB column options',
+        '#attributes' => array('class' => array('db-option')),
+      );
+      if (isset($value_default['db options'])) {
+        if (gettype($value_default['db options']) == 'array') {
+          $db_opt = $value_default['db options'];
+        }
+        else {
+          $db_opt = get_object_vars($value_default['db options']);
+        }
+      }
+      else {
+        $dp_opt = array();
+      }
+
+      // $db_opt = isset($value_default['db options'])? get_object_vars($value_default['db options']) : array();
+      $field['db options']['not null'] = array(
+        '#type' => 'checkbox',
+        '#title' => 'Required',
+        '#prefix' => '<div class="span1">',
+        '#suffix' => '</div>',
+        '#default_value' => !empty($db_opt['not null']) ?
+          $db_opt['not null'] : 0,
+      );
+
+      //TODO re-enable after we can handle more complex primary key logic
+      $field['db options']['primary'] = array(
+        '#type' => 'checkbox',
+        '#title' => 'Primary Key',
+        '#prefix' => '<div class="span1">',
+        '#suffix' => '</div>',
+        '#disabled' => FALSE,
+        '#default_value' => !empty($db_opt['primary']) ?
+          $db_opt['primary'] : 0,
+      );
+
+      $field['db options']['unique'] = array(
+        '#type' => 'checkbox',
+        '#title' => 'Unique',
+        '#prefix' => '<div class="span1">',
+        '#suffix' => '</div>',
+        '#default_value' => !empty($db_opt['unique']) ?
+          $db_opt['unique'] : 0,
+      );
+
+      $field['db options']['index'] = array(
+        '#type' => 'checkbox',
+        '#title' => 'Index',
+        '#prefix' => '<div class="span1">',
+        '#suffix' => '</div>',
+        '#default_value' => !empty($db_opt['index']) ?
+          $db_opt['index'] : 0,
+      );
+
+      $form['entity'][$i]['fields'][$j] += $field;
+
+    }
+
+    // Add another field button
+    $form['entity'][$i]['fields']['add'] = array(
+      '#type' => 'submit',
+      '#value' => t('Add another field to ' . $entity_name),
+      '#submit' => array('field_add'),
+    );
+
+  }
+  $db_name = $GLOBALS['databases']['default']['default']['database'];
+  $results = db_query('SHOW TABLES');
+  $tables = array();
+  $prop = 'Tables_in_' . $db_name;
+  foreach ($results as $result) {
+
+    $tables[$result->$prop] = $result->$prop;
+  }
+  $form['add_entity_from_table'] = array(
+    '#type' => 'select',
+    '#title' => t('Tables to convert to entities'),
+    '#options' => $tables,
+    '#multiple' => TRUE,
+    '#size' => 20,
+    '#default_value' => !empty($config->add_entity_from_table) ? array_keys(get_object_vars
+    ($config->add_entity_from_table)) : '',
+  );
+
+  $form['submit_entity_from_table'] = array(
+    '#type' => 'submit',
+    '#value' => t('Add entities from tables'),
+    '#submit' => array('entity_add_from_table'),
+  );
+
+
+  // Adds "Add another entity" button
+  $form['add_layer'] = array(
+    '#type' => 'submit',
+    '#value' => t('Add manual entity'),
+    '#submit' => array('entity_add'),
+  );
+
+  // submit function generates code
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'Generate',
+  );
+
+  $form['clear'] = array(
+    '#type' => 'submit',
+    '#value' => 'Reset form',
+    '#validate' => array('_form_clear'),
+  );
+
+  return $form;
+}
+
+
+function _form_clear($form, &$form_state) {
+  variable_del('entity_gen_last_made');
+  $form_state['num_entities'] = 1;
+  $form_state['entity_fields'] = array();
+  $form_state['values'] = array();
+  $form_state['rebuild'] = TRUE;
+}
+
+function field_add($form, &$form_state) {
+  $entity_id = $form_state['triggering_element']['#parents'][1];
+  $form_state['entity_fields'][$entity_id]++;
+
+  $config = $form_state['values'];
+
+  variable_set('entity_gen_last_made', json_encode($config));
+
+  // Setting $form_state['rebuild'] = TRUE causes the form to be rebuilt again.
+  $form_state['rebuild'] = TRUE;
+}
+
+function field_remove($form, &$form_state) {
+  $entity_id = $form_state['triggering_element']['#parents'][1];
+  $field_id = $form_state['triggering_element']['#parents'][3];
+  //remove element
+  $form_state['entity_fields'][$entity_id]--;
+  unset($form_state['values']['entity'][$entity_id]['fields'][$field_id]);
+
+  $config = $form_state['values'];
+
+  variable_set('entity_gen_last_made', json_encode($config));
+
+  // Setting $form_state['rebuild'] = TRUE causes the form to be rebuilt again.
+  $form_state['rebuild'] = TRUE;
+}
+
+function entity_add($form, &$form_state) {
+  // Everything in $form_state is persistent, so we'll just use
+  $form_state['num_entities']++;
+
+  $config = $form_state['values'];
+
+  variable_set('entity_gen_last_made', json_encode($config));
+
+  // Setting $form_state['rebuild'] = TRUE causes the form to be rebuilt again.
+  $form_state['rebuild'] = TRUE;
+
+}
+
+function _entity_get_field_types() {
+  return array(
+    'serial' => 'Serial',
+    'int' => 'Integer',
+    'numeric' => 'Numeric',
+    'float' => 'Float',
+    'varchar' => 'varchar',
+    'char' => 'Char',
+    'text' => 'Text',
+    'blob' => 'Blob',
+    'datetime' => 'Date time'
+  );
+
+}
+
+function entity_gen_ajax_fields_type($form, &$form_state) {
+  $entity_id = $form_state['triggering_element']['#parents'][1];
+  $field_id = $form_state['triggering_element']['#parents'][3];
+
+  return $form['entity'][$entity_id]['fields'][$field_id];
+}
+
+function entity_add_from_table($form, &$form_state) {
+  $tables = $form_state['values']['add_entity_from_table'];
+  foreach ($tables as $u_table) {
+    $table = db_escape_table($u_table);
+    $entity = array();
+    $entity['general'] = array();
+    $entity['general']['name'] = str_replace("_", " ", $table);
+    $entity['general']['machine_name'] = $table;
+    $entity['general']['description'] = 'Auto generated from table: ' . $table;
+    $entity['general']['auto_id'] = FALSE;
+    $entity['general']['workflow'] = FALSE;
+    $entity['general']['revisions'] = FALSE;
+    $entity['general']['foreign_keys'] = array();
+    $entity['fields'] = array();
+    $columns = db_query("SHOW COLUMNS FROM $table");
+    foreach ($columns as $column) {
+      $field = array();
+      $field['name'] = str_replace("_", " ", $column->Field);
+      $field['machine_name'] = $column->Field;
+      $type_arr = explode('(', $column->Type);
+      $type = $type_arr[0];
+      if (isset($type_arr[1])) {
+        $type_len = substr($type_arr[1], 0, -1);
+        $field['length'] = $type_len;
+      }
+
+      switch ($type) {
+        case 'varchar':
+          $field['type'] = 'text';
+          break;
+        default:
+          $field['type'] = 'text';
+      }
+
+      $field['db_options'] = array();
+
+      $field['db_options']['not null'] = ($column->Null == 'NO') ? 1 : 0;
+      $field['db_options']['primary'] = (strpos($column->Key, 'PRI') > 0) ? 1 : 0;
+
+      $entity['fields'][] = $field;
+    }
+    if ($form_state['values']['entity'][0]['general']['name'] == '') {
+      $form_state['values']['entity'] = array();
+    }
+    $form_state['values']['entity'][] = $entity;
+    $form_state['entity_fields'][count($form_state['values']['entity']) - 1] = count($entity['fields']) - 1;
+  }
+  $form_state['num_entities'] = count($form_state['values']['entity']) - 1;
+  //save values
+  $config = $form_state['values'];
+  dpm('from table:');
+  dpm($config);
+  variable_set('entity_gen_last_made', json_encode($config));
+
+  // Setting $form_state['rebuild'] = TRUE causes the form to be rebuilt again.
+  $form_state['rebuild'] = TRUE;
+}
+
+/*
+ * Creates the files
+ */
+function entity_gen_entity_form_submit($form, &$form_state) {
+  $config = $form_state['values'];
+
+  variable_set('entity_gen_last_made', json_encode($config));
+
+  $module_path = 'public://' . $config['machine_name'];
+  file_prepare_directory($module_path, FILE_CREATE_DIRECTORY);
+
+  // Create module.info
+  $module_info = theme('entity_gen_module_info',
+    array(
+      'name' => $config['name'],
+      'description' => $config['description'],
+      'package' => $config['package'],
+      'core' => $config['core'],
+      'machine_name' => $config['machine_name']
+    ));
+
+  file_unmanaged_save_data($module_info,
+    $module_path . '/' . $config['machine_name'] . '.info');
+
+
+  // Create entity files
+  foreach ($config['entity'] as $entity) {
+    $sub_module_path = $module_path . '/modules/' . $entity['general']['machine_name'];
+    file_prepare_directory($sub_module_path, FILE_CREATE_DIRECTORY);
+    $entity['class_name'] = str_replace(" ", "", ucwords(str_replace("_", " ", $entity['general']['machine_name'])));
+    // entity.admin.inc
+    $admin_file = theme('entity_gen_admin_inc', array('entity' => $entity));
+    file_unmanaged_save_data($admin_file, $sub_module_path . '/' . $entity['general']['machine_name'] . '.admin.inc');
+    // entity.api.php
+    $api_file = theme('entity_gen_api', array('entity' => $entity));
+    file_unmanaged_save_data($api_file, $sub_module_path . '/' . $entity['general']['machine_name'] . '.api.php');
+    // entity.controller.inc
+    $controller_file = theme('entity_gen_entity_controller_inc', array('entity' => $entity));
+    file_unmanaged_save_data($controller_file, $sub_module_path . '/' . $entity['class_name'] . '.controller.inc');
+    // entity.module
+    $entity_module_file = theme('entity_gen_entity_module', array('entity' => $entity));
+    file_unmanaged_save_data($entity_module_file, $sub_module_path . '/' . $entity['general']['machine_name'] . '.module');
+    // entity.pages.inc
+    $entity_pages_file = theme('entity_gen_pages_inc', array('entity' => $entity));
+    file_unmanaged_save_data($entity_pages_file, $sub_module_path . '/' . $entity['general']['machine_name'] . '.pages.inc');
+    // entity.info
+    $entity_info = theme('entity_gen_info', array('entity' => $entity, 'module_name' => $config['machine_name']));
+    file_unmanaged_save_data($entity_info, $sub_module_path . '/' . $entity['general']['machine_name'] . '.info');
+    // entity.install
+    $entity_install = theme('entity_gen_install', array('entity' => $entity));
+    file_unmanaged_save_data($entity_install, $sub_module_path . '/' . $entity['general']['machine_name'] . '.install');
+
+    // migrate files
+    $migrate_path = $sub_module_path . '/migrate';
+    file_prepare_directory($migrate_path, FILE_CREATE_DIRECTORY);
+    //migrate.info
+    $migrate_info = theme('entity_gen_migrate_entity_info', array('entity' => $entity));
+    file_unmanaged_save_data($migrate_info, $migrate_path . '/migrate_' . $entity['general']['machine_name'] . '.info');
+
+    // migrate.install
+    $migrate_install = theme('entity_gen_migrate_entity_install', array('entity' => $entity));
+    file_unmanaged_save_data($migrate_install, $migrate_path . '/migrate_' . $entity['general']['machine_name'] . '.install');
+
+    // migrate.migrate.inc
+    $migrate_inc = theme('entity_gen_migrate_entity_migrate_inc', array('entity' => $entity));
+    file_unmanaged_save_data($migrate_inc, $migrate_path . '/migrate_' . $entity['general']['machine_name'] . '.migrate.inc');
+
+    // migrate.module
+    $migrate_module = theme('entity_gen_migrate_entity_module', array('entity' => $entity));
+    file_unmanaged_save_data($migrate_module, $migrate_path . '/migrate_' . $entity['general']['machine_name'] . '.module');
+
+
+  }
+
+
+}
+
+
