@@ -157,7 +157,12 @@ foreach ($entity['fields'] as $field) {
         $type = 'textfield';
         break;
       case 'text':
-        $type = 'textarea';
+        if($field['length'] < 256) {
+          $type = 'textfield';
+        } else {
+          $type = 'textarea';
+        }
+
         break;
     }
 

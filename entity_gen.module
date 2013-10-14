@@ -41,8 +41,7 @@ function entity_gen_entity_form($form, &$form_state) {
 
   $config_raw = variable_get('entity_gen_last_made', '');
   $config = json_decode($config_raw);
-  dpm('last made:');
-  dpm($config);
+
   $form['info'] = array(
     '#type' => 'item',
     '#title' => t('Enter your Module details'),
@@ -53,7 +52,7 @@ function entity_gen_entity_form($form, &$form_state) {
     '#type' => 'textfield',
     '#title' => t('Module name'),
     '#required' => TRUE,
-    '#default_value' => !empty($config->name) ? $config->name : '',
+    '#default_value' => !empty($config->name) ? $config->name : 'MODULE NAME',
   );
 
   // machine name
@@ -62,7 +61,7 @@ function entity_gen_entity_form($form, &$form_state) {
     '#title' => 'Machine name',
     '#required' => TRUE,
     '#default_value' => !empty($config->machine_name) ? $config->machine_name
-      : '',
+      : 'MACHINE_NAME',
   );
 
   // module description
@@ -72,7 +71,7 @@ function entity_gen_entity_form($form, &$form_state) {
     '#title' => 'Module description',
     '#required' => TRUE,
     '#default_value' => !empty($config->description) ? $config->description
-      : '',
+      : 'DESCRIPTION OF MODULE',
   );
 
   //core
@@ -257,8 +256,6 @@ function entity_gen_entity_form($form, &$form_state) {
       $field['name'] = array(
         '#type' => 'textfield',
         '#title' => t('Field Name'),
-        '#prefix' => '<div class="span2">',
-        '#suffix' => '</div>',
         '#size' => 20,
         '#default_value' => !empty($value_default['name']) ?
           $value_default['name'] : '',
@@ -273,11 +270,14 @@ function entity_gen_entity_form($form, &$form_state) {
       $field['machine_name'] = array(
         '#type' => 'textfield',
         '#title' => t('Machine name'),
-        '#prefix' => '<div class="span2">',
-        '#suffix' => '</div>',
         '#size' => 20,
         '#default_value' => !empty($value_default['machine_name']) ?
           $value_default['machine_name'] : '',
+      );
+      $field['description'] = array(
+        '#type' => 'textarea',
+        '#title' => t('Description of field.'),
+        '#default_value' => !empty($value_default['description']) ? $value_default['description'] : '',
       );
 
       $field_type_options = _entity_get_field_types();
@@ -287,8 +287,6 @@ function entity_gen_entity_form($form, &$form_state) {
       $field['type'] = array(
         '#type' => 'select',
         '#title' => t('Type of field'),
-        '#prefix' => '<div class="span2">',
-        '#suffix' => '</div>',
         '#options' => $field_type_options,
         '#default_value' => $type_selected,
         '#ajax' => array(
@@ -310,8 +308,6 @@ function entity_gen_entity_form($form, &$form_state) {
           $field['length'] = array(
             '#type' => 'textfield',
             '#title' => 'Length!',
-            '#prefix' => '<div class="span2">',
-            '#suffix' => '</div>',
             '#size' => 5,
             '#default_value' => !empty($value_default['length']) ?
               $value_default['length'] : 255,
@@ -323,8 +319,6 @@ function entity_gen_entity_form($form, &$form_state) {
           $field['size'] = array(
             '#type' => 'select',
             '#title' => t('Size of field'),
-            '#prefix' => '<div class="span2">',
-            '#suffix' => '</div>',
             '#options' => array(
               'tiny' => 'Tiny',
               'small' => 'Small',
@@ -336,35 +330,33 @@ function entity_gen_entity_form($form, &$form_state) {
           break;
         case 'numeric':
         case 'float':
+          $field['precision'] = array(
+            '#type' => 'textfield',
+            '#title' => 'Precision',
+            '#description' => 'The total number of digits to store including to the right of the decimal point.',
+            '#size' => 5,
+            '#default_value' => !empty($value_default['precision']) ?
+                $value_default['precision'] : 10,
+          );
           $field['scale'] = array(
             '#type' => 'textfield',
             '#title' => 'Scale',
-            '#prefix' => '<div class="span2">',
-            '#suffix' => '</div>',
+            '#description' => 'The number of digits to store on the right of the decimal point.',
             '#size' => 5,
             '#default_value' => !empty($value_default['scale']) ?
               $value_default['scale'] : 2,
           );
-          $field['precision'] = array(
-            '#type' => 'textfield',
-            '#title' => 'Precision',
-            '#prefix' => '<div class="span2">',
-            '#suffix' => '</div>',
-            '#size' => 5,
-            '#default_value' => !empty($value_default['precision']) ?
-              $value_default['precision'] : 10,
-          );
+          // No break, we want to fall through and pick up 'unsigned' as well.
 
         case 'int':
         case 'serial':
           $field['unsigned'] = array(
             '#type' => 'checkbox',
             '#title' => 'Unsigned',
-            '#prefix' => '<div class="span2">',
-            '#suffix' => '</div>',
             '#default_value' => !empty($value_default['unsigned']) ?
               $value_default['unsigned'] : 0,
           );
+
         default:
           $size_selected = !empty($value_default['size']) ?
             $value_default['size'] : 'normal';
@@ -372,8 +364,6 @@ function entity_gen_entity_form($form, &$form_state) {
           $field['size'] = array(
             '#type' => 'select',
             '#title' => t('Size of field'),
-            '#prefix' => '<div class="span2">',
-            '#suffix' => '</div>',
             '#options' => array(
               'tiny' => 'Tiny',
               'small' => 'Small',
@@ -389,12 +379,12 @@ function entity_gen_entity_form($form, &$form_state) {
         '#title' => 'DB column options',
         '#attributes' => array('class' => array('db-option')),
       );
-      if (isset($value_default['db options'])) {
-        if (gettype($value_default['db options']) == 'array') {
-          $db_opt = $value_default['db options'];
+      if (isset($value_default['db_options'])) {
+        if (gettype($value_default['db_options']) == 'array') {
+          $db_opt = $value_default['db_options'];
         }
         else {
-          $db_opt = get_object_vars($value_default['db options']);
+          $db_opt = get_object_vars($value_default['db_options']);
         }
       }
       else {
@@ -405,8 +395,6 @@ function entity_gen_entity_form($form, &$form_state) {
       $field['db options']['not null'] = array(
         '#type' => 'checkbox',
         '#title' => 'Required',
-        '#prefix' => '<div class="span1">',
-        '#suffix' => '</div>',
         '#default_value' => !empty($db_opt['not null']) ?
           $db_opt['not null'] : 0,
       );
@@ -415,8 +403,6 @@ function entity_gen_entity_form($form, &$form_state) {
       $field['db options']['primary'] = array(
         '#type' => 'checkbox',
         '#title' => 'Primary Key',
-        '#prefix' => '<div class="span1">',
-        '#suffix' => '</div>',
         '#disabled' => FALSE,
         '#default_value' => !empty($db_opt['primary']) ?
           $db_opt['primary'] : 0,
@@ -425,8 +411,6 @@ function entity_gen_entity_form($form, &$form_state) {
       $field['db options']['unique'] = array(
         '#type' => 'checkbox',
         '#title' => 'Unique',
-        '#prefix' => '<div class="span1">',
-        '#suffix' => '</div>',
         '#default_value' => !empty($db_opt['unique']) ?
           $db_opt['unique'] : 0,
       );
@@ -434,8 +418,6 @@ function entity_gen_entity_form($form, &$form_state) {
       $field['db options']['index'] = array(
         '#type' => 'checkbox',
         '#title' => 'Index',
-        '#prefix' => '<div class="span1">',
-        '#suffix' => '</div>',
         '#default_value' => !empty($db_opt['index']) ?
           $db_opt['index'] : 0,
       );
@@ -504,7 +486,7 @@ function entity_gen_form_clear($form, &$form_state) {
   variable_del('entity_gen_last_made');
   $form_state['num_entities'] = 1;
   unset($form_state['entity_fields']);
-  unset($form_state['values']);
+  $form_state['values'] = array();
 
   $form_state['input'] = array();
   $form_state['rebuild'] = TRUE;
@@ -528,6 +510,7 @@ function field_remove($form, &$form_state) {
   //remove element
   $form_state['entity_fields'][$entity_id]--;
   unset($form_state['values']['entity'][$entity_id]['fields'][$field_id]);
+  unset($form_state['input']['entity'][$entity_id]['fields'][$field_id]);
 
   $config = $form_state['values'];
 
@@ -586,6 +569,10 @@ function entity_add_from_table($form, &$form_state) {
     $entity['general']['revisions'] = FALSE;
     $entity['general']['foreign_keys'] = array();
     $entity['fields'] = array();
+    // Example structure to parse.
+    //Field	Type	            Null  Key	Default	Extra
+    //aid	int(10) unsigned	NO	  PRI	NULL	auto_increment
+
     $columns = db_query("SHOW COLUMNS FROM $table");
     foreach ($columns as $column) {
       $field = array();
@@ -594,16 +581,44 @@ function entity_add_from_table($form, &$form_state) {
       $type_arr = explode('(', $column->Type);
       $type = $type_arr[0];
       if (isset($type_arr[1])) {
-        $type_len = substr($type_arr[1], 0, -1);
-        $field['length'] = $type_len;
+        $type_len = explode(')', $type_arr[1]);
+        $length = $type_len[0];
       }
-
+      //  Map SQL types to Schema API Types.
       switch ($type) {
-        case 'varchar':
+        case 'varchar' :
           $field['type'] = 'text';
+          $field['length'] = $length;
           break;
+        case 'date' :
+        case 'datetime' :
+          $field['type'] = 'int';
+          break;
+        case 'decimal' :
+        case 'numeric' :
+          $field['type'] = 'numeric';
+          $attr = explode(',', $length);
+          $field['precision'] = $attr[0];
+          $field['scale'] = $attr[1];
+          break;
+        case 'float' :
+          $field['type'] = 'float';
+          break;
+        case 'blob' :
+          $field['type'] = 'blob';
+          break;
+        case 'int' :
+          if($column->Extra == 'auto_increment') {
+            $field['type'] = 'serial';
+          } else {
+            $field['type'] = 'int';
+          }
+
         default:
           $field['type'] = 'text';
+      }
+      if(isset($column->Default)) {
+        $field['default'] = $column->Default;
       }
 
       $field['db_options'] = array();
@@ -622,8 +637,6 @@ function entity_add_from_table($form, &$form_state) {
   $form_state['num_entities'] = count($form_state['values']['entity']) - 1;
   //save values
   $config = $form_state['values'];
-  dpm('from table:');
-  dpm($config);
   variable_set('entity_gen_last_made', json_encode($config));
 
   // Setting $form_state['rebuild'] = TRUE causes the form to be rebuilt again.

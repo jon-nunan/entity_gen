@@ -83,7 +83,7 @@ function <?php print $machine_name ?>_menu() {
   $items['<?php print $machine_name ?>/add'] = array(
     'title' => 'Add <?php print $name ?>',
     'page callback' => '<?php print $machine_name ?>_admin_add_page',
-    'access arguments' => array('administer <?php print $machine_name ?> entities'),
+    'access arguments' => array('create <?php print $machine_name ?> entities'),
     'file' => '<?php print $machine_name ?>.admin.inc',
     'type' => MENU_LOCAL_ACTION,
     'tab_parent' => '<?php print $machine_name ?>',
@@ -155,6 +155,21 @@ function <?php print $machine_name ?>_menu() {
   return $items;
 }
 
+
+
+/**
+ * Implements hook_admin_paths().
+ */
+function <?php print $machine_name ?>_admin_paths(){
+  $paths = array(
+    '<?php print $machine_name?>/add' => TRUE,
+    '<?php print $machine_name?>/add/*' => TRUE,
+    '<?php print $machine_name?>/*/edit' => TRUE,
+  );
+
+  return $paths;
+}
+
 /**
  * Implements hook_permission().
  */
@@ -195,15 +210,14 @@ function <?php print $machine_name ?>_permission() {
  * Implements hook_entity_property_info_alter().
  */
 function <?php print $machine_name ?>_entity_property_info_alter(&$info) {
-  include_once(drupal_get_path('module', '<?php print $module_machine_name?>').'/<?php print $module_machine_name ?>.util.inc');
   $properties = &$info['<?php print $machine_name ?>']['properties'];
-  require_once drupal_get_path('module', '<?php print $module_machine_name ?>') .'/<?php print $module_machine_name ?>.install';
+  require_once drupal_get_path('module', '<?php print $machine_name ?>') .'/<?php print $machine_name ?>.install';
   $schema = <?php print $machine_name ?>_schema();
   $<?php print $machine_name ?> = $schema['<?php print $machine_name ?>'];
   foreach($<?php print $machine_name ?>['fields'] as $name => $data){
     $properties[$name] = array(
       'label' => t($data['description']),
-      'type' => __<?php print $module_machine_name ?>_get_info_type($data['type']),
+      'type' => __<?php print $machine_name ?>_get_info_type($data['type']),
       'description' => t($data['description']),
       'setter callback' => 'entity_property_verbatim_set',
       'setter permission' => 'administer <?php print $machine_name ?> entities',
@@ -216,7 +230,7 @@ function <?php print $machine_name ?>_entity_property_info_alter(&$info) {
 /*
 * Helper function for hook_entity_property_info
 */
-function __get_info_type($type){
+function __<?php print $machine_name ?>_get_info_type($type){
   switch($type){
     case 'int':
     case 'serial':
