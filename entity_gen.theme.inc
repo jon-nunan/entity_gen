@@ -64,7 +64,7 @@ function entity_gen_theme() {
       'path' => $template_path,
     ),
     'entity_gen_entity_module' => array(
-      'variables' => array('entity' => NULL),
+      'variables' => array('entity' => NULL, 'module_name' => NULL),
       'template' => 'entity-gen-entity-module',
       'path' => $template_path,
     ),
@@ -74,7 +74,7 @@ function entity_gen_theme() {
       'path' => $template_path,
     ),
     'entity_gen_info' => array(
-      'variables' => array('entity' => NULL, 'module_name' => NULL),
+      'variables' => array('entity' => NULL, 'module_machine_name' => NULL),
       'template' => 'entity-gen-info',
       'path' => $template_path,
     ),
@@ -155,6 +155,7 @@ function template_preprocess_entity_gen_hook_menu(&$variables) {
 
 
 function template_preprocess_entity_gen_entity_class(&$variables) {
+  dpm($variables);
   $variables['machine_name'] = $variables['entity']['machine_name'];
   $variables['name'] = $variables['entity']['name'];
   $variables['class_name'] = str_replace(" ","",ucwords(str_replace("_", " ", $variables['machine_name'])));
@@ -199,6 +200,7 @@ function template_preprocess_entity_gen_pages_inc(&$variables) {
 function template_preprocess_entity_gen_info(&$variables) {
   $variables['machine_name'] = $variables['entity']['general']['machine_name'];
   $variables['entity_name'] = $variables['entity']['general']['name'];
+  $variables['class_name'] = $variables['entity']['class_name'];
 }
 
 function template_preprocess_entity_gen_install(&$variables) {

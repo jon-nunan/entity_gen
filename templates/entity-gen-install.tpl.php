@@ -8,8 +8,9 @@ print '<?php ' ?>
 function <?php print $entity['general']['machine_name'] ?>_schema() {
   $schema = array();
   $schema['<?php print $entity['general']['machine_name'] ?>'] = array(
-  'description' => '<?php print $entity['general']['description'] ?>',
-  'fields' => array(<?php
+    'description' => '<?php print $entity['general']['description'] ?>',
+    'fields' => array(
+<?php
   unset($entity['fields']['add']);
   if($entity['general']['auto_id'] == TRUE){ ?>
 
@@ -31,18 +32,18 @@ function <?php print $entity['general']['machine_name'] ?>_schema() {
   <?php }
 
   foreach ($entity['fields'] as $field) { ?>
-  '<?php print $field['machine_name'] ?>' => array(
-    'type' => '<?php print $field['type'] ?>',
-    <?php print_if_set($field, 'description'); ?>
-    <?php print_if_set($field, 'unsigned'); ?>
-    <?php print_if_set($field, 'size');?>
-    <?php print_if_set($field, 'length');?>
-    <?php print_if_set($field, 'precision');?>
-    <?php print_if_set($field, 'scale');?>
-    <?php print_if_set($field, 'default');?>
-    <?php print_if_set($field, 'not null');?>
-  ),
-  <?php } ?>
+      '<?php print $field['machine_name'] ?>' => array(
+        'type' => '<?php print $field['type'] ?>',
+<?php print_if_set($field, 'description', 8); ?>
+<?php print_if_set($field, 'unsigned', 8); ?>
+<?php print_if_set($field, 'size', 8);?>
+<?php print_if_set($field, 'length', 8);?>
+<?php print_if_set($field, 'precision', 8);?>
+<?php print_if_set($field, 'scale', 8);?>
+<?php print_if_set($field, 'default', 8);?>
+<?php print_if_set($field, 'not null', 8);?>
+      ),
+<?php } ?>
 <?php
   if($entity['general']['workflow'] == TRUE){ ?>
   // Auto workflow fields
@@ -129,7 +130,7 @@ function <?php print $entity['general']['machine_name'] ?>_schema() {
  ?>
 
 
-  'primary key' => array(<?php print implode(',',$primary_key)?>),
+  'primary key' => array(<?php if (isset($primary_key)) { print implode(',',$primary_key); } ?>),
 );
 <?php
   if($entity['general']['revisions'] == TRUE) {

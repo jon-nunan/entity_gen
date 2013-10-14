@@ -1,7 +1,7 @@
 <?php
 
-function print_if_set($field, $name){
+function print_if_set($field, $name, $leading_space = 0){
   if(isset($field[$name])){
-    print "      '$name' => '$field[$name]', \r\n";
+    print str_repeat(' ', $leading_space) . "'$name' => '$field[$name]', \r\n";
   }
 }

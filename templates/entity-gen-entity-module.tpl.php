@@ -195,15 +195,15 @@ function <?php print $machine_name ?>_permission() {
  * Implements hook_entity_property_info_alter().
  */
 function <?php print $machine_name ?>_entity_property_info_alter(&$info) {
-  include_once(drupal_get_path('module', '<?php print $module_name?>').'/<?php print $module_name ?>.util.inc');
+  include_once(drupal_get_path('module', '<?php print $module_machine_name?>').'/<?php print $module_machine_name ?>.util.inc');
   $properties = &$info['<?php print $machine_name ?>']['properties'];
-  require_once drupal_get_path('module', '<?php print $machine_name ?>') .'/<?php print $machine_name ?>.install';
+  require_once drupal_get_path('module', '<?php print $module_machine_name ?>') .'/<?php print $module_machine_name ?>.install';
   $schema = <?php print $machine_name ?>_schema();
   $<?php print $machine_name ?> = $schema['<?php print $machine_name ?>'];
   foreach($<?php print $machine_name ?>['fields'] as $name => $data){
     $properties[$name] = array(
       'label' => t($data['description']),
-      'type' => __<?php print $module_name ?>_get_info_type($data['type']),
+      'type' => __<?php print $module_machine_name ?>_get_info_type($data['type']),
       'description' => t($data['description']),
       'setter callback' => 'entity_property_verbatim_set',
       'setter permission' => 'administer <?php print $machine_name ?> entities',
